@@ -1,0 +1,74 @@
+%{
+   /*
+   Author1: Fred Aklamanu (fred.aklamanu@telecom-sudparis.eu) 
+   Author2: Saurabh Sharma (saurabh.sharma@telecom-sudparis.eu)
+   Date:    09/06/2015
+   Version : 3.0 
+   Course:  CSC 7201 (Computing Project)
+   Description: This is the code for generating lexical scanner (lex.yy.c), which defines a routine `yylex()'. 
+   It reads an assembly file(*.s) and generates tokens based on the regular expressions in the rule section. 
+   Whenever a match occurs, for a regular expression, it returns that token to the yacc for further processing.
+   */
+#include <stdio.h>
+#include <string.h>
+#include "y.tab.h"
+extern int yylval; 
+void jmplabel(char*p,int l);
+//extern int yydebug = 1 ;
+void concat(char result[],char str1[],char str2[]);
+
+%}
+%%
+
+^[\t]\..+$      ; //Ignore mutiple tabs
+^[Aa-zZ0-9][^:]+ {yylval =strdup(yytext); return Function_Label;}   // Stores corresponding text in yylval and returns a token for function labels
+:$         { return Colon;} //Returns a token for colon
+^[ \t]"call".+      {  yylval = strdup(yytext); return Function_Call_Label;} // Stores corresponding text in yylval and returns a token for function calls
+^[ \t]j.p.+ { jmplabel(yytext,yyleng); yylval = strdup(yytext); return Unconditional_Jump_Label;} //calls a function jmplabel, stores text in yylval and returns a token for unconditional jumps
+^[ \t][j].+ { jmplabel(yytext,yyleng);  yylval = strdup(yytext); return Conditional_Jump_Label;} //calls a function jmplabel, stores text in yylval and returns a token for conditional jumps
+^[.A-Z0-9]+  {yylval = strdup(yytext); return Normal_Label;}  // Stores corresponding text in yylval and returns a token for normal labels
+^[ \t][ret]+. { yylval = strdup(yytext); return Return;} // Stores corresponding text in yylval and returns a token for return instruction
+^[ \t][^.^j.][a-z]+. { yylval = strdup(yytext); return Normal_Instruction;} // Stores corresponding text in yylval and returns a token for a normal instruction
+[ \t]		; //Ignore tabs
+[ \n]           ; //Ignore empty lines
+.		; //Ignore everything else
+%%
+
+/*
+   Function   : jmplabel
+   
+   Description: The jmplabel Procedure is used to edit the text ((jmp,jle..etc Label)) in order to delete the jump instruction and only 
+                fetch the label 
+   
+   Parameters : text and the length of the text 
+   
+   Returns     : Nothing
+   
+   Examples of Usage: 
+   Input: jmp .L3 
+   Output: .L3
+
+*/
+
+void jmplabel(char*p,int l)
+{
+   int c;
+   char *begin, *end, temp;
+   begin=p;	
+   for (c = 0; c < l - 1; c++)
+{
+if((p[c]=='.')||(p[c]>='A'&& p[c]<='Z')||(p[c]>='0' && p[c] <='9'))
+{
+*begin =p[c];
+
+}
+else
+{
+*begin=' ';
+
+}
+begin++;
+}
+}
+
+
